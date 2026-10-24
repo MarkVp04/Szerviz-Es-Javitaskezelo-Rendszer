@@ -6,7 +6,11 @@ namespace SzervizApp.DataContext.Entities
     public enum JavitasAllapot
     {
         Atvett = 1,
-        Lezart = 2
+        Lezart = 2,
+        BevizsgalasAlatt = 3,
+        JavitasAlatt = 4,
+        AlkatreszreVar = 5,
+        Visszaadva = 6
     }
 
     public enum JavitasEredmeny
@@ -40,6 +44,22 @@ namespace SzervizApp.DataContext.Entities
 
         [MaxLength(2000)]
         public string? LezarasIndoklasa { get; set; }
+
+        public int? FelvevoFelhasznaloId { get; set; }
+        public int? FelelosFelhasznaloId { get; set; }
+        public DateTime? TervezettBefejezes { get; set; }
+        public bool Garancialis { get; set; }
+
+        [MaxLength(2000)]
+        public string? Megjegyzes { get; set; }
+
+        public bool KoltsegekVeglegesitve { get; set; }
+
+        [ConcurrencyCheck]
+        public int Verzio { get; set; } = 1;
+
+        public Felhasznalo? FelvevoFelhasznalo { get; set; }
+        public Felhasznalo? FelelosFelhasznalo { get; set; }
 
         public Ugyfel Ugyfel { get; set; } = null!;
 

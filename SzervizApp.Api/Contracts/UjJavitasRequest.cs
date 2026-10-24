@@ -13,4 +13,8 @@ public sealed class UjJavitasRequest
     [Required]
     [StringLength(2000, MinimumLength = 1)]
     public string BejelentettHiba { get; set; } = string.Empty;
+
+    public bool Garancialis { get; set; }
+
+    [StringLength(2000)] public string? Megjegyzes { get; set; }
 }

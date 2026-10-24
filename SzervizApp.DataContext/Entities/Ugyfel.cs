@@ -17,5 +17,12 @@ namespace SzervizApp.DataContext.Entities
         [EmailAddress]
         [MaxLength(254)]
         public string? Email { get; set; }
+
+        [MaxLength(300)]
+        public string? Cim { get; set; }
+
+        public DateTime Letrehozva { get; set; } = DateTime.UtcNow;
+
+        public bool Aktiv { get; set; } = true;
     }
 }

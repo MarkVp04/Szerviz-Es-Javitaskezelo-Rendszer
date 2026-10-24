@@ -11,5 +11,12 @@ public sealed record JavitasDto(
     JavitasAllapot Allapot,
     DateTime? LezarasDatuma,
     JavitasEredmeny? Eredmeny,
-    string? LezarasIndoklasa
+    string? LezarasIndoklasa,
+    int? FelvevoFelhasznaloId,
+    int? FelelosFelhasznaloId,
+    DateTime? TervezettBefejezes,
+    bool Garancialis,
+    string? Megjegyzes,
+    bool KoltsegekVeglegesitve,
+    int Verzio
 );

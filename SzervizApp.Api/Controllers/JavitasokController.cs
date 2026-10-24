@@ -1,184 +1,61 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SzervizApp.Api.Contracts;
-using SzervizApp.DataContext.Context;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SzervizApp.DTOs;
+using SzervizApp.Services;
 using SzervizApp.DataContext.Entities;
 
 namespace SzervizApp.Api.Controllers;
 
-[ApiController]
 [Route("api/javitasok")]
-public class JavitasokController : ControllerBase
+public sealed class JavitasokController : SzervizControllerBase
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IJavitasService _service;
 
-    public JavitasokController(AppDbContext dbContext)
+    public JavitasokController(IJavitasService service)
     {
-        _dbContext = dbContext;
+        _service = service;
     }
 
-    // GET: /api/javitasok
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<JavitasDto>>> GetAll(
-        CancellationToken cancellationToken)
-    {
-        var javitasok = await _dbContext.Javitasok
-            .AsNoTracking()
-            .OrderByDescending(j => j.AtvetelDatuma)
-            .ToListAsync(cancellationToken);
+    public async Task<ActionResult<IEnumerable<JavitasDto>>> GetAll(CancellationToken ct, string? kereses = null,
+        JavitasAllapot? allapot = null, int? felelosId = null, bool csakNyitott = false)
+    => Ok(await _service.GetAll(ct, kereses, allapot, felelosId, csakNyitott));
 
-        return Ok(javitasok.Select(ToDto).ToList());
-    }
+    [HttpGet("feladatok"), Authorize(Roles = Munkatarsak)]
+    public async Task<ActionResult<IEnumerable<FeladatDto>>> Feladatok(CancellationToken ct, bool sajat = false)
+    => Ok(await _service.Feladatok(ct, sajat));
 
-    // GET: /api/javitasok/1
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<JavitasDto>> GetById(
-        int id,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<JavitasDto>> GetById(int id, CancellationToken ct)
+    => Ok(await _service.GetById(id, ct));
+
+    [HttpPost, Authorize(Roles = Recepcio)]
+    public async Task<ActionResult<JavitasDto>> Create(UjJavitasRequest r, CancellationToken ct)
     {
-        var javitas = await _dbContext.Javitasok
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                j => j.Id == id,
-                cancellationToken);
-
-        if (javitas is null)
-        {
-            return NotFound(new
-            {
-                message = $"A(z) {id} azonosítójú javítás nem található."
-            });
-        }
-
-        return Ok(ToDto(javitas));
+        var result = await _service.Create(r, ct);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    // POST: /api/javitasok
-    [HttpPost]
-    public async Task<ActionResult<JavitasDto>> Create(
-        [FromBody] UjJavitasRequest request,
-        CancellationToken cancellationToken)
+    [HttpPut("{id:int}/felelos"), Authorize(Roles = Szerepkorok.Manager)]
+    public async Task<ActionResult<JavitasDto>> Felelos(int id, FelelosRequest r, CancellationToken ct)
+    => Ok(await _service.Felelos(id, r, ct));
+
+    [HttpPut("{id:int}/allapot"), Authorize(Roles = Technikus)]
+    public async Task<ActionResult<JavitasDto>> Allapot(int id, AllapotRequest r, CancellationToken ct)
+    => Ok(await _service.Allapot(id, r, ct));
+
+    [HttpPut("{id:int}/lezaras"), Authorize(Roles = Technikus)]
+    public async Task<ActionResult<JavitasDto>> Lezaras(int id, JavitasLezarasRequest r, CancellationToken ct)
+    => Ok(await _service.Lezaras(id, r, ct));
+
+    [HttpGet("{id:int}/visszaadas")]
+    public async Task<ActionResult<Visszaadas>> VisszaadasAdatok(int id, CancellationToken ct)
+    => Ok(await _service.VisszaadasAdatok(id, ct));
+
+    [HttpPost("{id:int}/visszaadas"), Authorize(Roles = Recepcio)]
+    public async Task<ActionResult<VisszaadasDto>> Visszaadas(int id, VisszaadasRequest r, CancellationToken ct)
     {
-        var ugyfelLetezik = await _dbContext.Ugyfelek
-            .AnyAsync(
-                u => u.Id == request.UgyfelId,
-                cancellationToken);
-
-        if (!ugyfelLetezik)
-        {
-            return NotFound(new
-            {
-                message = "A megadott ügyfél nem található."
-            });
-        }
-
-        var eszkozLetezik = await _dbContext.Eszkozok
-            .AnyAsync(
-                e => e.Id == request.EszkozId,
-                cancellationToken);
-
-        if (!eszkozLetezik)
-        {
-            return NotFound(new
-            {
-                message = "A megadott eszköz nem található."
-            });
-        }
-
-        var javitas = new Javitas
-        {
-            UgyfelId = request.UgyfelId,
-            EszkozId = request.EszkozId,
-            BejelentettHiba = request.BejelentettHiba.Trim(),
-
-            // Ezeket nem a kliens határozza meg.
-            AtvetelDatuma = DateTime.UtcNow,
-            Allapot = JavitasAllapot.Atvett
-        };
-
-        _dbContext.Javitasok.Add(javitas);
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = javitas.Id },
-            ToDto(javitas));
-    }
-
-    // PUT: /api/javitasok/1/lezaras
-    [HttpPut("{id:int}/lezaras")]
-    public async Task<ActionResult<JavitasDto>> Lezaras(
-        int id,
-        [FromBody] JavitasLezarasRequest request,
-        CancellationToken cancellationToken)
-    {
-        if (!Enum.IsDefined(
-                typeof(JavitasEredmeny),
-                request.Eredmeny))
-        {
-            return BadRequest(new
-            {
-                message = "Érvénytelen javítási eredmény."
-            });
-        }
-
-        // Sikertelen vagy javítás nélkül lezárt ügy esetén
-        // kötelező az indoklás.
-        if (request.Eredmeny != JavitasEredmeny.Javitva
-            && string.IsNullOrWhiteSpace(request.LezarasIndoklasa))
-        {
-            return BadRequest(new
-            {
-                message = "Ehhez a lezárási eredményhez indoklás szükséges."
-            });
-        }
-
-        var javitas = await _dbContext.Javitasok
-            .FirstOrDefaultAsync(
-                j => j.Id == id,
-                cancellationToken);
-
-        if (javitas is null)
-        {
-            return NotFound(new
-            {
-                message = $"A(z) {id} azonosítójú javítás nem található."
-            });
-        }
-
-        if (javitas.Allapot == JavitasAllapot.Lezart)
-        {
-            return Conflict(new
-            {
-                message = "Ez a javítás már le van zárva."
-            });
-        }
-
-        javitas.Allapot = JavitasAllapot.Lezart;
-        javitas.LezarasDatuma = DateTime.UtcNow;
-        javitas.Eredmeny = request.Eredmeny;
-        javitas.LezarasIndoklasa =
-            string.IsNullOrWhiteSpace(request.LezarasIndoklasa)
-                ? null
-                : request.LezarasIndoklasa.Trim();
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return Ok(ToDto(javitas));
-    }
-
-    private static JavitasDto ToDto(Javitas javitas)
-    {
-        return new JavitasDto(
-            javitas.Id,
-            javitas.UgyfelId,
-            javitas.EszkozId,
-            javitas.BejelentettHiba,
-            javitas.AtvetelDatuma,
-            javitas.Allapot,
-            javitas.LezarasDatuma,
-            javitas.Eredmeny,
-            javitas.LezarasIndoklasa);
+        var result = await _service.Visszaadas(id, r, ct);
+        return CreatedAtAction(nameof(VisszaadasAdatok), new { id }, result);
     }
 }

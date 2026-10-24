@@ -20,6 +20,13 @@ namespace SzervizApp.DataContext.Entities
         [MaxLength(100)]
         public string? Sorozatszam { get; set; }
 
+        public DateTime? VasarlasDatuma { get; set; }
+
+        [MaxLength(2000)]
+        public string? Megjegyzes { get; set; }
+
+        public DateTime Letrehozva { get; set; } = DateTime.UtcNow;
+
         public Ugyfel Tulajdonos { get; set; } = null!;
     }
 }

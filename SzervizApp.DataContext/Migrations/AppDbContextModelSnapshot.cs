@@ -17,6 +17,113 @@ namespace SzervizApp.DataContext.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.13");
 
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Alkatresz", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("AktualisEgysegar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cikkszam")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Egyseg")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Gyarto")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nev")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Cikkszam")
+                        .IsUnique();
+
+                    b.ToTable("Alkatreszek");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.AlkatreszFelhasznalas", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AlkatreszId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Datum")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Egysegar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Mennyiseg")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RogzitoFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlkatreszId");
+
+                    b.HasIndex("JavitasId");
+
+                    b.HasIndex("RogzitoFelhasznaloId");
+
+                    b.ToTable("AlkatreszFelhasznalasok");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Bevizsgalas", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("BecsultKoltseg")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Datum")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Eredmeny")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("VegezteFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JavitasId")
+                        .IsUnique();
+
+                    b.HasIndex("VegezteFelhasznaloId");
+
+                    b.ToTable("Bevizsgalasok");
+                });
+
             modelBuilder.Entity("SzervizApp.DataContext.Entities.Eszkoz", b =>
                 {
                     b.Property<int>("Id")
@@ -32,6 +139,13 @@ namespace SzervizApp.DataContext.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("Letrehozva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Megjegyzes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Sorozatszam")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -39,11 +153,72 @@ namespace SzervizApp.DataContext.Migrations
                     b.Property<int>("TulajdonosId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("VasarlasDatuma")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("TulajdonosId");
 
                     b.ToTable("Eszkozok");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Felhasznalo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("BelepesVerzio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Felhasznalonev")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JelszoHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("JogosultsagId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nev")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizaltFelhasznalonev")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("UgyfelId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JogosultsagId");
+
+                    b.HasIndex("NormalizaltFelhasznalonev")
+                        .IsUnique();
+
+                    b.HasIndex("UgyfelId");
+
+                    b.ToTable("Felhasznalok");
                 });
 
             modelBuilder.Entity("SzervizApp.DataContext.Entities.Javitas", b =>
@@ -69,6 +244,18 @@ namespace SzervizApp.DataContext.Migrations
                     b.Property<int>("EszkozId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("FelelosFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("FelvevoFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Garancialis")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("KoltsegekVeglegesitve")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LezarasDatuma")
                         .HasColumnType("TEXT");
 
@@ -76,16 +263,160 @@ namespace SzervizApp.DataContext.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Megjegyzes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TervezettBefejezes")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("UgyfelId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("Verzio")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
 
                     b.HasKey("Id");
 
                     b.HasIndex("EszkozId");
 
+                    b.HasIndex("FelelosFelhasznaloId");
+
+                    b.HasIndex("FelvevoFelhasznaloId");
+
                     b.HasIndex("UgyfelId");
 
                     b.ToTable("Javitasok");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.JavitasKoltseg", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Datum")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Megnevezes")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Osszeg")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RogzitoFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Tipus")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JavitasId");
+
+                    b.HasIndex("RogzitoFelhasznaloId");
+
+                    b.ToTable("JavitasKoltsegek");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Jogosultsag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Leiras")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nev")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kod")
+                        .IsUnique();
+
+                    b.ToTable("Jogosultsagok");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Kod = "Recepcios",
+                            Nev = "Recepciós"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Kod = "Szerelo",
+                            Nev = "Szerelő"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Kod = "Manager",
+                            Nev = "Manager"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Kod = "Ugyfel",
+                            Nev = "Ügyfél"
+                        });
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Munkanaplo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("Befejezes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Kezdes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LedolgozottOra")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Leiras")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Oradij")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FelhasznaloId");
+
+                    b.HasIndex("JavitasId");
+
+                    b.ToTable("Munkanaplok");
                 });
 
             modelBuilder.Entity("SzervizApp.DataContext.Entities.Ugyfel", b =>
@@ -94,8 +425,20 @@ namespace SzervizApp.DataContext.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Aktiv")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Cim")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Email")
                         .HasMaxLength(254)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Letrehozva")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Nev")
@@ -113,6 +456,120 @@ namespace SzervizApp.DataContext.Migrations
                     b.ToTable("Ugyfelek");
                 });
 
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Uzenet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FeladoFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("KuldesDatuma")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tartalom")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UgyfelId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeladoFelhasznaloId");
+
+                    b.HasIndex("JavitasId");
+
+                    b.HasIndex("UgyfelId");
+
+                    b.ToTable("Uzenetek");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Visszaadas", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AtvevoNev")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("JavitasId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Megjegyzes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RogzitoFelhasznaloId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("VisszaadasDatuma")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JavitasId")
+                        .IsUnique();
+
+                    b.HasIndex("RogzitoFelhasznaloId");
+
+                    b.ToTable("Visszaadasok");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.AlkatreszFelhasznalas", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Alkatresz", "Alkatresz")
+                        .WithMany()
+                        .HasForeignKey("AlkatreszId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "RogzitoFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("RogzitoFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Alkatresz");
+
+                    b.Navigation("Javitas");
+
+                    b.Navigation("RogzitoFelhasznalo");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Bevizsgalas", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "VegezteFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("VegezteFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Javitas");
+
+                    b.Navigation("VegezteFelhasznalo");
+                });
+
             modelBuilder.Entity("SzervizApp.DataContext.Entities.Eszkoz", b =>
                 {
                     b.HasOne("SzervizApp.DataContext.Entities.Ugyfel", "Tulajdonos")
@@ -124,6 +581,24 @@ namespace SzervizApp.DataContext.Migrations
                     b.Navigation("Tulajdonos");
                 });
 
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Felhasznalo", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Jogosultsag", "Jogosultsag")
+                        .WithMany()
+                        .HasForeignKey("JogosultsagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Ugyfel", "Ugyfel")
+                        .WithMany()
+                        .HasForeignKey("UgyfelId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Jogosultsag");
+
+                    b.Navigation("Ugyfel");
+                });
+
             modelBuilder.Entity("SzervizApp.DataContext.Entities.Javitas", b =>
                 {
                     b.HasOne("SzervizApp.DataContext.Entities.Eszkoz", "Eszkoz")
@@ -131,6 +606,16 @@ namespace SzervizApp.DataContext.Migrations
                         .HasForeignKey("EszkozId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "FelelosFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("FelelosFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "FelvevoFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("FelvevoFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SzervizApp.DataContext.Entities.Ugyfel", "Ugyfel")
                         .WithMany()
@@ -140,7 +625,94 @@ namespace SzervizApp.DataContext.Migrations
 
                     b.Navigation("Eszkoz");
 
+                    b.Navigation("FelelosFelhasznalo");
+
+                    b.Navigation("FelvevoFelhasznalo");
+
                     b.Navigation("Ugyfel");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.JavitasKoltseg", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "RogzitoFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("RogzitoFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Javitas");
+
+                    b.Navigation("RogzitoFelhasznalo");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Munkanaplo", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "Felhasznalo")
+                        .WithMany()
+                        .HasForeignKey("FelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Felhasznalo");
+
+                    b.Navigation("Javitas");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Uzenet", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "FeladoFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("FeladoFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Ugyfel", "Ugyfel")
+                        .WithMany()
+                        .HasForeignKey("UgyfelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FeladoFelhasznalo");
+
+                    b.Navigation("Javitas");
+
+                    b.Navigation("Ugyfel");
+                });
+
+            modelBuilder.Entity("SzervizApp.DataContext.Entities.Visszaadas", b =>
+                {
+                    b.HasOne("SzervizApp.DataContext.Entities.Javitas", "Javitas")
+                        .WithMany()
+                        .HasForeignKey("JavitasId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SzervizApp.DataContext.Entities.Felhasznalo", "RogzitoFelhasznalo")
+                        .WithMany()
+                        .HasForeignKey("RogzitoFelhasznaloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Javitas");
+
+                    b.Navigation("RogzitoFelhasznalo");
                 });
 #pragma warning restore 612, 618
         }

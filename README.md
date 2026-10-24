@@ -1,1 +1,1 @@
-# Szerviz-Es-Jav-t-skezelo-Rendszer
+# Szerviz- és javításkezelő rendszer
