@@ -40,6 +40,10 @@ public sealed class JavitasokController : SzervizControllerBase
     public async Task<ActionResult<JavitasDto>> Felelos(int id, FelelosRequest r, CancellationToken ct)
     => Ok(await _service.Felelos(id, r, ct));
 
+    [HttpPost("{id:int}/vallalas"), Authorize(Roles = Szerepkorok.Szerelo)]
+    public async Task<ActionResult<JavitasDto>> Vallalas(int id, CancellationToken ct)
+    => Ok(await _service.Vallalas(id, ct));
+
     [HttpPut("{id:int}/allapot"), Authorize(Roles = Technikus)]
     public async Task<ActionResult<JavitasDto>> Allapot(int id, AllapotRequest r, CancellationToken ct)
     => Ok(await _service.Allapot(id, r, ct));

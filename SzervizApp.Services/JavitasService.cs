@@ -14,6 +14,7 @@ public interface IJavitasService
     Task<JavitasDto> GetById(int id, CancellationToken ct);
     Task<JavitasDto> Create(UjJavitasRequest r, CancellationToken ct);
     Task<JavitasDto> Felelos(int id, FelelosRequest r, CancellationToken ct);
+    Task<JavitasDto> Vallalas(int id, CancellationToken ct);
     Task<JavitasDto> Allapot(int id, AllapotRequest r, CancellationToken ct);
     Task<JavitasDto> Lezaras(int id, JavitasLezarasRequest r, CancellationToken ct);
     Task<Visszaadas> VisszaadasAdatok(int id, CancellationToken ct);
@@ -84,6 +85,25 @@ public sealed class JavitasService(AppDbContext db, IHttpContextAccessor accesso
             throw new SzervizKivetel(400, "A tervezett befejezés nem előzheti meg az átvételt.");
         j.FelelosFelhasznaloId = r.FelhasznaloId; j.TervezettBefejezes = r.TervezettBefejezes?.UtcDateTime;
         Valtozott(j); await Db.SaveChangesAsync(ct); return ToDto(j);
+    }
+
+    public async Task<JavitasDto> Vallalas(int id, CancellationToken ct)
+    {
+        var j = await Db.Javitasok.FindAsync([id], ct);
+        if (j is null) throw new SzervizKivetel(404, "A javítás nem található.");
+        Nyitott(j);
+        if (j.FelelosFelhasznaloId.HasValue)
+            throw new SzervizKivetel(409, "Ezt a javítást már vállalta vagy megkapta egy másik munkatárs.");
+
+        // Csak a bejelentkezett szerelő vállalhatja a munkát. A controller szerepkör-ellenőrzése
+        // mellett itt is explicit szerepkör-ellenőrzést végzünk, hogy a szolgáltatás szabálya egyértelmű legyen.
+        if (!User.IsInRole(Szerepkorok.Szerelo))
+            throw new SzervizKivetel(403, "Feladatot csak szerelő vállalhat.");
+
+        j.FelelosFelhasznaloId = FelhasznaloId;
+        Valtozott(j); // A Verzio concurrency token megakadályozza a párhuzamos dupla vállalást.
+        await Db.SaveChangesAsync(ct);
+        return ToDto(j);
     }
 
     public async Task<JavitasDto> Allapot(int id, AllapotRequest r, CancellationToken ct)

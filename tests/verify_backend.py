@@ -268,7 +268,15 @@ def scenario(directory):
         p2 = f'/api/javitasok/{j2["id"]}'
         check("Új tulajdonos nem látja a régi ügyfél javítását", [x["id"] for x in b.test("Előzmények tulajdonosváltás után", "GET", f'/api/eszkozok/{da["id"]}/javitasok')] == [j2["id"]])
         check("Régi tulajdonos csak saját előzményét látja", [x["id"] for x in a.test("Régi saját előzmény", "GET", f'/api/eszkozok/{da["id"]}/javitasok')] == [jid])
-        manager.test("Új javítás felelőse", "PUT", p2 + "/felelos", 200, {"felhasznaloId": tech_user["id"]})
+        rec.test("Recepciós nem vállalhat szerelői feladatot", "POST", p2 + "/vallalas", 403)
+        claimed = tech.test("Szerelő szabad javítás vállalása", "POST", p2 + "/vallalas", 200)
+        check("A vállalás a bejelentkezett szerelőt teszi felelőssé", claimed["felelosFelhasznaloId"] == tech_user["id"])
+        other.test("Másik szerelő nem vállalhatja el a már kiosztott javítást", "POST", p2 + "/vallalas", 409)
+        reassigned = manager.test("Manager át tudja osztani a vállalt javítást", "PUT", p2 + "/felelos", 200,
+                                  {"felhasznaloId": other_user["id"]})
+        check("A manager kijelölése felülírja a szerelői vállalást", reassigned["felelosFelhasznaloId"] == other_user["id"])
+        manager.test("Manager vissza tudja osztani a javítást", "PUT", p2 + "/felelos", 200,
+                     {"felhasznaloId": tech_user["id"]})
         tech.test("Nulla költség véglegesítése", "PUT", p2 + "/koltsegek/veglegesites")
         tech.test("Sikeres eredmény munka nélkül tiltott", "PUT", p2 + "/lezaras", 409, {"eredmeny": "Javitva", "lezarasIndoklasa": "Nem volt munka"})
         tech.test("Javítás nélküli lezárás bevizsgálás nélkül", "PUT", p2 + "/lezaras", 200, {"eredmeny": "JavitasNelkulLezarva", "lezarasIndoklasa": "Az ügyfél visszakérte"})
