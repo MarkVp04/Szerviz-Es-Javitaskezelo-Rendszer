@@ -46,5 +46,15 @@ public abstract class SzervizServiceBase(AppDbContext db, IHttpContextAccessor a
         j.BejelentettHiba, j.AtvetelDatuma, j.Allapot, j.LezarasDatuma, j.Eredmeny,
         j.LezarasIndoklasa, j.FelvevoFelhasznaloId, j.FelelosFelhasznaloId,
         j.TervezettBefejezes, j.Garancialis, j.Megjegyzes, j.KoltsegekVeglegesitve, j.Verzio,
-        j.FelelosFelhasznalo?.Nev);
+        j.FelelosFelhasznalo?.Nev, j.Ugyfel?.Nev, EszkozMegnevezes(j.Eszkoz));
+
+    private static string? EszkozMegnevezes(Eszkoz? eszkoz)
+    {
+        if (eszkoz is null) return null;
+        var nev = string.Join(" ", new[] { eszkoz.Gyarto, eszkoz.EszkozTipus }
+            .Where(x => !string.IsNullOrWhiteSpace(x)));
+        if (!string.IsNullOrWhiteSpace(eszkoz.Sorozatszam))
+            nev += $" ({eszkoz.Sorozatszam})";
+        return nev;
+    }
 }

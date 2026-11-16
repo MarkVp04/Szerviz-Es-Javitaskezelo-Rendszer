@@ -76,7 +76,7 @@ public sealed class LoginForm : Form
         subtitle.Location = new Point(56, 111);
         content.Controls.Add(subtitle);
 
-        //AddField(content, "API cím", _apiAddress, 176);
+        AddField(content, "API cím", _apiAddress, 176);
         _apiAddress.Text = "http://localhost:5203";
         AddField(content, "Felhasználónév", _username, 258);
         AddField(content, "Jelszó", _password, 340);

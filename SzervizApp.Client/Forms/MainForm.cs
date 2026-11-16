@@ -1,4 +1,6 @@
 using System.Drawing;
+using System.Globalization;
+using System.Text;
 using System.Windows.Forms;
 using SzervizApp.Client.Api;
 using SzervizApp.Client.Models;
@@ -18,16 +20,36 @@ public sealed class MainForm : Form
     private const string RepairsPage = "repairs";
     private const string CustomersPage = "customers";
     private const string DevicesPage = "devices";
+    private const string MessagesPage = "messages";
 
-    private bool IsManager => _user.Szerepkor.Equals("Manager", StringComparison.OrdinalIgnoreCase);
-    private bool CanReception => IsManager || _user.Szerepkor.Equals("Recepcios", StringComparison.OrdinalIgnoreCase);
-    private bool IsStaff => CanReception || _user.Szerepkor.Equals("Szerelo", StringComparison.OrdinalIgnoreCase);
+    // A token általában a belső szerepkörkódot adja vissza (pl. Ugyfel),
+    // de régebbi/egyedi adatbázisokban a megjelenített név (pl. Ügyfél) is előfordulhat.
+    // Az ékezetek és szóközök figyelmen kívül hagyásával mindkét alak felismerhető.
+    private string NormalizedRole => NormalizeRole(_user.Szerepkor);
+    private bool IsManager => NormalizedRole is "MANAGER" or "RENDSZERGAZDA" or "SZERVIZVEZETO";
+    private bool IsCustomer => NormalizedRole is "UGYFEL" or "CUSTOMER" || _user.UgyfelId.HasValue;
+    private bool IsReceptionist => NormalizedRole is "RECEPCIOS" or "RECEPTIONIST";
+    private bool IsMechanic => NormalizedRole is "SZERELO" or "MECHANIC";
+    private bool CanReception => IsManager || IsReceptionist;
+    private bool IsStaff => CanReception || IsMechanic;
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role)) return string.Empty;
+        var decomposed = role.Normalize(NormalizationForm.FormD);
+        var withoutDiacritics = new string(decomposed
+            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+            .ToArray());
+        return withoutDiacritics.Replace(" ", "", StringComparison.Ordinal)
+            .Replace("-", "", StringComparison.Ordinal)
+            .ToUpperInvariant();
+    }
 
     public MainForm(ApiClient api, LoginResponseDto user)
     {
         _api = api;
         _user = user;
-        Text = "SzervizApp";
+        Text = "SzervizApp – UI 1.5.1";
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(1120, 720);
@@ -77,6 +99,9 @@ public sealed class MainForm : Form
             AddNav(navPanel, "♙", "Ügyfelek", CustomersPage);
             AddNav(navPanel, "▣", "Eszközök", DevicesPage);
         }
+        // Az ügyfélszolgálati üzenetek csak ügyfél, recepciós és manager szerepkörben láthatók.
+        if (CanReception || IsCustomer)
+            AddNav(navPanel, "✉", "Üzenetek", MessagesPage);
 
         var bottom = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Sidebar };
         sidebarLayout.Controls.Add(bottom, 0, 3);
@@ -141,7 +166,7 @@ public sealed class MainForm : Form
 
         var topbar = new Panel { Dock = DockStyle.Top, Height = 68, BackColor = Color.White, Padding = new Padding(28, 0, 28, 0) };
         right.Controls.Add(topbar);
-        var appLabel = AppTheme.Label("Szerviz és javításkezelő rendszer", 9.5f, false, AppTheme.Muted);
+        var appLabel = AppTheme.Label("Szerviz és javításkezelő rendszer  ·  UI 1.5.1", 9.5f, false, AppTheme.Muted);
         appLabel.Location = new Point(28, 25);
         topbar.Controls.Add(appLabel);
         _connectionLabel.Location = new Point(0, 25);
@@ -192,6 +217,7 @@ public sealed class MainForm : Form
                 case RepairsPage: await ShowRepairsAsync(); break;
                 case CustomersPage: await ShowCustomersAsync(); break;
                 case DevicesPage: await ShowDevicesAsync(); break;
+                case MessagesPage: await ShowMessagesAsync(); break;
             }
             _connectionLabel.Text = "●  Kapcsolódva";
             _connectionLabel.ForeColor = AppTheme.Green;
@@ -244,7 +270,7 @@ public sealed class MainForm : Form
         actions.Controls.Add(refresh);
 
         var repairs = await _api.GetJavitasokAsync();
-        List<FeladatDto> tasks = IsStaff ? await _api.GetFeladatokAsync(sajat: _user.Szerepkor.Equals("Szerelo", StringComparison.OrdinalIgnoreCase)) : [];
+        List<FeladatDto> tasks = IsStaff ? await _api.GetFeladatokAsync(sajat: IsMechanic) : [];
 
         var total = repairs.Count;
         var open = repairs.Count(x => x.Allapot is not ("Lezart" or "Visszaadva"));
@@ -287,14 +313,14 @@ public sealed class MainForm : Form
         else
         {
             foreach (var item in repairs.OrderByDescending(x => x.AtvetelDatuma).Take(8))
-                grid.Rows.Add($"#{item.Id}", $"Ügyfél #{item.UgyfelId}", $"Eszköz #{item.EszkozId}", AppTheme.StatusLabel(item.Allapot), item.AtvetelDatuma.ToString("yyyy. MM. dd."));
+                grid.Rows.Add($"#{item.Id}", item.UgyfelNev ?? "Ügyfél neve nem érhető el", item.EszkozNev ?? "Eszköz neve nem érhető el", AppTheme.StatusLabel(item.Allapot), item.AtvetelDatuma.ToString("yyyy. MM. dd."));
         }
         ApplyStatusColors(grid, "Allapot");
     }
 
     private async Task ShowRepairsAsync()
     {
-        var isMechanic = _user.Szerepkor.Equals("Szerelo", StringComparison.OrdinalIgnoreCase);
+        var isMechanic = IsMechanic;
         if (isMechanic)
         {
             await ShowMechanicRepairsAsync();
@@ -359,7 +385,7 @@ public sealed class MainForm : Form
                 var repairs = await _api.GetJavitasokAsync();
                 foreach (var item in repairs.OrderByDescending(x => x.AtvetelDatuma)
                              .Where(x => Matches(filter, x.BejelentettHiba, x.Id.ToString())))
-                    grid.Rows.Add(item.Id, $"Ügyfél #{item.UgyfelId}", $"Eszköz #{item.EszkozId}", item.BejelentettHiba,
+                    grid.Rows.Add(item.Id, item.UgyfelNev ?? "Ügyfél neve nem érhető el", item.EszkozNev ?? "Eszköz neve nem érhető el", item.BejelentettHiba,
                         AppTheme.StatusLabel(item.Allapot), item.AtvetelDatuma.ToString("yyyy. MM. dd."));
             }
         }
@@ -608,7 +634,7 @@ public sealed class MainForm : Form
         body.Resize += (_, _) => grid.Size = new Size(Math.Max(700, body.ClientSize.Width - 4), Math.Max(300, body.ClientSize.Height - 60));
 
         var devices = await _api.GetEszkozokAsync();
-        var customers = await _api.GetUgyfelekAsync();
+        var customers = await _api.GetUgyfelekAsync(aktiv: true);
         var names = customers.ToDictionary(x => x.Id, x => x.Nev);
         void Populate()
         {
@@ -618,6 +644,263 @@ public sealed class MainForm : Form
         }
         search.TextChanged += (_, _) => Populate();
         Populate();
+    }
+
+    private async Task ShowMessagesAsync()
+    {
+        StartPage("Üzenetek", "Kapcsolattartás az ügyfelek és a recepció között.", out var body, out var actions);
+
+        var refresh = AppTheme.Button("↻  Frissítés");
+        AppTheme.StyleButton(refresh);
+        actions.Controls.Add(refresh);
+
+        List<UgyfelDto> customers = [];
+        int? customerId = null;
+        if (CanReception)
+        {
+            customers = await _api.GetUgyfelekAsync(aktiv: true);
+        }
+        else
+        {
+            customerId = _user.UgyfelId
+                ?? throw new InvalidOperationException("Ehhez a fiókhoz nincs ügyfélprofil rendelve.");
+        }
+
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
+        body.Controls.Add(layout);
+
+        var contactBar = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Background, Padding = new Padding(0, 0, 0, 8) };
+        layout.Controls.Add(contactBar, 0, 0);
+        var contactLabel = AppTheme.Label(CanReception ? "Ügyfél beszélgetése" : "Ügyfélszolgálat", 9.5f, true, AppTheme.Ink);
+        contactLabel.Location = new Point(2, 10);
+        contactBar.Controls.Add(contactLabel);
+
+        ComboBox? customerPicker = null;
+        if (CanReception)
+        {
+            var picker = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = 360,
+                Height = 34,
+                Font = AppTheme.Font(9.5f),
+                BackColor = Color.White,
+                ForeColor = AppTheme.Ink,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            customerPicker = picker;
+            picker.DataSource = customers;
+            picker.DisplayMember = nameof(UgyfelDto.Nev);
+            picker.ValueMember = nameof(UgyfelDto.Id);
+            contactBar.Controls.Add(picker);
+            contactBar.Resize += (_, _) => picker.Left = Math.Max(150, contactBar.ClientSize.Width - picker.Width);
+            picker.Left = Math.Max(150, contactBar.ClientSize.Width - picker.Width);
+        }
+        else
+        {
+            var customerName = AppTheme.Label(_user.Nev, 9, false, AppTheme.Muted);
+            customerName.Location = new Point(2, 30);
+            contactBar.Controls.Add(customerName);
+        }
+
+        var conversationCard = AppTheme.Card();
+        conversationCard.Dock = DockStyle.Fill;
+        conversationCard.Padding = new Padding(12);
+        conversationCard.Margin = new Padding(0, 0, 0, 10);
+        layout.Controls.Add(conversationCard, 0, 1);
+
+        var messagesPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoScroll = true,
+            BackColor = AppTheme.Background,
+            Padding = new Padding(4),
+            Margin = new Padding(0)
+        };
+        conversationCard.Controls.Add(messagesPanel);
+
+        var composePanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0, 6, 0, 0)
+        };
+        composePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        composePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132));
+        layout.Controls.Add(composePanel, 0, 2);
+
+        var messageInput = AppTheme.TextBox("Írd ide az üzeneted...");
+        messageInput.Multiline = true;
+        messageInput.MaxLength = 4000;
+        messageInput.AcceptsReturn = true;
+        messageInput.ScrollBars = ScrollBars.Vertical;
+        messageInput.Dock = DockStyle.Fill;
+        messageInput.Margin = new Padding(0, 0, 10, 0);
+        var sendButton = AppTheme.Button("Küldés", true);
+        AppTheme.StyleButton(sendButton, true);
+        sendButton.Dock = DockStyle.Fill;
+        sendButton.Margin = new Padding(0);
+        composePanel.Controls.Add(messageInput, 0, 0);
+        composePanel.Controls.Add(sendButton, 1, 0);
+
+        List<UzenetListaDto> loadedMessages = [];
+
+        int? SelectedCustomerId()
+        {
+            if (!CanReception) return customerId;
+            if (customerPicker?.SelectedValue is int selectedId) return selectedId;
+            return (customerPicker?.SelectedItem as UgyfelDto)?.Id;
+        }
+
+        void RenderMessages()
+        {
+            messagesPanel.SuspendLayout();
+            messagesPanel.Controls.Clear();
+            if (loadedMessages.Count == 0)
+            {
+                var empty = AppTheme.Label("Még nincs üzenetváltás. Írd meg az első üzenetet!", 9.5f, false, AppTheme.Muted);
+                empty.Margin = new Padding(12, 14, 12, 12);
+                messagesPanel.Controls.Add(empty);
+            }
+            else
+            {
+                foreach (var message in loadedMessages)
+                {
+                    var own = message.FeladoFelhasznaloId == _user.FelhasznaloId;
+                    var rowWidth = Math.Max(420, messagesPanel.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 24);
+                    var bubbleWidth = Math.Min(680, Math.Max(320, rowWidth - 36));
+                    var lineCount = Math.Max(1, (message.Tartalom.Length + Math.Max(30, (bubbleWidth - 34) / 8) - 1)
+                        / Math.Max(30, (bubbleWidth - 34) / 8));
+                    var bubbleHeight = 54 + lineCount * 19;
+                    var row = new Panel
+                    {
+                        Width = rowWidth,
+                        Height = bubbleHeight + 12,
+                        Margin = new Padding(0, 0, 0, 2),
+                        BackColor = AppTheme.Background
+                    };
+                    var bubble = new Panel
+                    {
+                        Width = bubbleWidth,
+                        Height = bubbleHeight,
+                        Left = own ? Math.Max(0, rowWidth - bubbleWidth - 4) : 4,
+                        Top = 2,
+                        BackColor = own ? AppTheme.AccentLight : Color.White,
+                        BorderStyle = BorderStyle.FixedSingle
+                    };
+                    var meta = AppTheme.Label($"{message.FeladoNev}  •  {message.KuldesDatuma.ToLocalTime():yyyy. MM. dd. HH:mm}",
+                        8.2f, true, AppTheme.Muted);
+                    meta.Location = new Point(12, 8);
+                    var text = new Label
+                    {
+                        Text = message.Tartalom,
+                        Location = new Point(12, 29),
+                        Size = new Size(bubbleWidth - 26, bubbleHeight - 35),
+                        Font = AppTheme.Font(9.2f),
+                        ForeColor = AppTheme.Ink,
+                        AutoEllipsis = false
+                    };
+                    bubble.Controls.Add(meta);
+                    bubble.Controls.Add(text);
+                    row.Controls.Add(bubble);
+                    messagesPanel.Controls.Add(row);
+                }
+            }
+            messagesPanel.ResumeLayout();
+            messagesPanel.PerformLayout();
+            messagesPanel.AutoScrollPosition = new Point(0, messagesPanel.DisplayRectangle.Height);
+        }
+
+        async Task LoadConversationAsync()
+        {
+            var selectedId = SelectedCustomerId();
+            if (!selectedId.HasValue)
+            {
+                loadedMessages = [];
+                sendButton.Enabled = false;
+                RenderMessages();
+                return;
+            }
+
+            sendButton.Enabled = true;
+            loadedMessages = await _api.GetUzenetekAsync(CanReception ? selectedId : null);
+            RenderMessages();
+        }
+
+        refresh.Click += async (_, _) => await SafeRunAsync(LoadConversationAsync);
+        if (customerPicker is not null)
+            customerPicker.SelectedIndexChanged += async (_, _) => await SafeRunAsync(LoadConversationAsync);
+        sendButton.Click += async (_, _) =>
+        {
+            var content = messageInput.Text.Trim();
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                MessageBox.Show(this, "Az üzenet szövege nem lehet üres.", "Hiányzó üzenet",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (content.Length > 4000)
+            {
+                MessageBox.Show(this, "Az üzenet legfeljebb 4000 karakter lehet.", "Túl hosszú üzenet",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            var selectedId = SelectedCustomerId();
+            if (!selectedId.HasValue)
+            {
+                MessageBox.Show(this, "Válassz ki egy ügyfelet.", "Hiányzó ügyfél",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            sendButton.Enabled = false;
+            try
+            {
+                await _api.SendUzenetAsync(new UzenetRequest
+                {
+                    UgyfelId = CanReception ? selectedId : null,
+                    Tartalom = content
+                });
+                messageInput.Clear();
+                await LoadConversationAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Nem sikerült elküldeni az üzenetet",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                sendButton.Enabled = true;
+            }
+        };
+
+        if (CanReception && customers.Count == 0)
+        {
+            sendButton.Enabled = false;
+            messagesPanel.Controls.Add(AppTheme.Label("Nincs aktív ügyfél a rendszerben.", 9.5f, false, AppTheme.Muted));
+        }
+        else
+        {
+            await LoadConversationAsync();
+        }
     }
 
     private async Task ShowRepairDetailsAsync(int id)
@@ -727,12 +1010,12 @@ public sealed class MainForm : Form
     private static bool Matches(string filter, params string?[] values)
         => string.IsNullOrWhiteSpace(filter) || values.Any(x => x?.Contains(filter.Trim(), StringComparison.CurrentCultureIgnoreCase) == true);
 
-    private static string RoleLabel(string role) => role switch
+    private static string RoleLabel(string role) => NormalizeRole(role) switch
     {
-        "Manager" => "Rendszergazda",
-        "Recepcios" => "Recepciós",
-        "Szerelo" => "Szerelő",
-        "Ugyfel" => "Ügyfél",
+        "MANAGER" or "RENDSZERGAZDA" or "SZERVIZVEZETO" => "Rendszergazda",
+        "RECEPCIOS" or "RECEPTIONIST" => "Recepciós",
+        "SZERELO" or "MECHANIC" => "Szerelő",
+        "UGYFEL" or "CUSTOMER" => "Ügyfél",
         _ => role
     };
 

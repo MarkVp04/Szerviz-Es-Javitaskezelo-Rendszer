@@ -419,8 +419,8 @@ internal sealed class RepairDetailsDialog : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 125)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
-        AddInfoCard(layout, "Ügyfél azonosító", _repair.UgyfelId.ToString(), 0, 0);
-        AddInfoCard(layout, "Eszköz azonosító", _repair.EszkozId.ToString(), 1, 0);
+        AddInfoCard(layout, "Ügyfél", _repair.UgyfelNev ?? "–", 0, 0);
+        AddInfoCard(layout, "Eszköz", _repair.EszkozNev ?? "–", 1, 0);
         AddInfoCard(layout, "Átvétel dátuma", _repair.AtvetelDatuma.ToString("yyyy. MM. dd. HH:mm"), 0, 1);
         AddInfoCard(layout, "Garanciális", _repair.Garancialis ? "Igen" : "Nem", 1, 1);
         var issue = AppTheme.Card(); issue.Dock = DockStyle.Fill; issue.Margin = new Padding(4);

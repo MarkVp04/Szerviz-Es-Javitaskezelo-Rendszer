@@ -19,5 +19,7 @@ public sealed record JavitasDto(
     string? Megjegyzes,
     bool KoltsegekVeglegesitve,
     int Verzio,
-    string? FelelosNev = null
+    string? FelelosNev = null,
+    string? UgyfelNev = null,
+    string? EszkozNev = null
 );

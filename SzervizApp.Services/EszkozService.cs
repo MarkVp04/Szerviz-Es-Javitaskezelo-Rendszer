@@ -44,7 +44,11 @@ public sealed class EszkozService(AppDbContext db, IHttpContextAccessor accessor
         if (e is null || (Ugyfel && e.TulajdonosId != UgyfelId && !await LathatoJavitasok.AnyAsync(x => x.EszkozId == id, ct)))
             throw new SzervizKivetel(404, "Az adat nem található.");
         // Tulajdonosváltás után sem látható más ügyfél javítása.
-        return (await LathatoJavitasok.AsNoTracking().Where(x => x.EszkozId == id)
+        return (await LathatoJavitasok
+            .Include(x => x.FelelosFelhasznalo)
+            .Include(x => x.Ugyfel)
+            .Include(x => x.Eszkoz)
+            .AsNoTracking().Where(x => x.EszkozId == id)
             .OrderByDescending(x => x.AtvetelDatuma).ToListAsync(ct)).Select(ToDto);
     }
 

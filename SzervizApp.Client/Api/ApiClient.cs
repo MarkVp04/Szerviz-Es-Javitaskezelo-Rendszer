@@ -58,14 +58,26 @@ public sealed class ApiClient : IDisposable
     public Task<JavitasDto> CreateJavitasAsync(UjJavitasRequest request, CancellationToken ct = default)
         => SendAsync<JavitasDto>(HttpMethod.Post, "api/javitasok", request, true, ct);
 
-    public Task<List<UgyfelDto>> GetUgyfelekAsync(string? kereses = null, CancellationToken ct = default)
+    public Task<List<UgyfelDto>> GetUgyfelekAsync(string? kereses = null, CancellationToken ct = default, bool? aktiv = null)
     {
-        var query = string.IsNullOrWhiteSpace(kereses) ? "" : $"?kereses={Uri.EscapeDataString(kereses)}";
+        var queryParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(kereses)) queryParts.Add($"kereses={Uri.EscapeDataString(kereses)}");
+        if (aktiv.HasValue) queryParts.Add($"aktiv={aktiv.Value.ToString().ToLowerInvariant()}");
+        var query = queryParts.Count == 0 ? "" : "?" + string.Join("&", queryParts);
         return SendAsync<List<UgyfelDto>>(HttpMethod.Get, $"api/ugyfelek{query}", null, true, ct);
     }
 
     public Task<UgyfelDto> CreateUgyfelAsync(UgyfelRequest request, CancellationToken ct = default)
         => SendAsync<UgyfelDto>(HttpMethod.Post, "api/ugyfelek", request, true, ct);
+
+    public Task<List<UzenetListaDto>> GetUzenetekAsync(int? ugyfelId = null, CancellationToken ct = default)
+    {
+        var query = ugyfelId.HasValue ? $"?ugyfelId={ugyfelId.Value}" : "";
+        return SendAsync<List<UzenetListaDto>>(HttpMethod.Get, $"api/uzenetek{query}", null, true, ct);
+    }
+
+    public Task<UzenetDto> SendUzenetAsync(UzenetRequest request, CancellationToken ct = default)
+        => SendAsync<UzenetDto>(HttpMethod.Post, "api/uzenetek", request, true, ct);
 
     public Task<List<EszkozListaDto>> GetEszkozokAsync(string? kereses = null, CancellationToken ct = default)
     {

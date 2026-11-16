@@ -34,6 +34,8 @@ public sealed class JavitasDto
     public bool KoltsegekVeglegesitve { get; set; }
     public int Verzio { get; set; }
     public string? FelelosNev { get; set; }
+    public string? UgyfelNev { get; set; }
+    public string? EszkozNev { get; set; }
 }
 
 public sealed class FeladatDto
@@ -101,6 +103,34 @@ public sealed class UjJavitasRequest
     public string BejelentettHiba { get; set; } = "";
     public bool Garancialis { get; set; }
     public string? Megjegyzes { get; set; }
+}
+
+public sealed class UzenetListaDto
+{
+    public int Id { get; set; }
+    public int UgyfelId { get; set; }
+    public int? JavitasId { get; set; }
+    public int FeladoFelhasznaloId { get; set; }
+    public string FeladoNev { get; set; } = "";
+    public string Tartalom { get; set; } = "";
+    public DateTime KuldesDatuma { get; set; }
+}
+
+public sealed class UzenetDto
+{
+    public int Id { get; set; }
+    public int UgyfelId { get; set; }
+    public int? JavitasId { get; set; }
+    public int FeladoFelhasznaloId { get; set; }
+    public string Tartalom { get; set; } = "";
+    public DateTime KuldesDatuma { get; set; }
+}
+
+public sealed class UzenetRequest
+{
+    public int? UgyfelId { get; set; }
+    public int? JavitasId { get; set; }
+    public string Tartalom { get; set; } = "";
 }
 
 public sealed class ApiErrorResponse
