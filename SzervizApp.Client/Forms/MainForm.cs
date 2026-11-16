@@ -52,7 +52,9 @@ public sealed class MainForm : Form
         sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
         sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
+        // A láblécben a felhasználói adatok, jelszóváltás és kijelentkezés
+        // külön sorba kerülnek, így kis magasságú ablaknál sem fedik egymást.
+        sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 128));
         sidebar.Controls.Add(sidebarLayout);
 
         var brandRow = new Panel { Dock = DockStyle.Fill };
@@ -76,19 +78,61 @@ public sealed class MainForm : Form
             AddNav(navPanel, "▣", "Eszközök", DevicesPage);
         }
 
-        var bottom = new Panel { Dock = DockStyle.Fill };
+        var bottom = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Sidebar };
         sidebarLayout.Controls.Add(bottom, 0, 3);
-        var divider = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Color.FromArgb(53, 67, 88) };
-        bottom.Controls.Add(divider);
-        var userName = new Label { Text = _user.Nev, AutoSize = false, Height = 24, Dock = DockStyle.Top, ForeColor = Color.White, Font = AppTheme.Font(9.5f, true), Padding = new Padding(7, 12, 0, 0) };
-        bottom.Controls.Add(userName);
-        var userRole = new Label { Text = RoleLabel(_user.Szerepkor), AutoSize = false, Height = 27, Dock = DockStyle.Top, ForeColor = AppTheme.SidebarMuted, Font = AppTheme.Font(8.5f), Padding = new Padding(7, 5, 0, 0) };
-        bottom.Controls.Add(userRole);
-        var logout = new Button { Text = "↪  Kijelentkezés", Dock = DockStyle.Bottom, Height = 34, FlatStyle = FlatStyle.Flat, BackColor = Color.Transparent, ForeColor = AppTheme.SidebarMuted, Font = AppTheme.Font(9), TextAlign = ContentAlignment.MiddleLeft, Cursor = Cursors.Hand };
+        var bottomLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5,
+            BackColor = AppTheme.Sidebar, Margin = new Padding(0), Padding = new Padding(0)
+        };
+        bottomLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        bottomLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 1));
+        bottomLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+        bottomLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+        bottomLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        bottomLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        bottom.Controls.Add(bottomLayout);
+
+        var divider = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(53, 67, 88), Margin = new Padding(0) };
+        bottomLayout.Controls.Add(divider, 0, 0);
+        var userName = new Label
+        {
+            Text = _user.Nev, AutoSize = false, Dock = DockStyle.Fill,
+            ForeColor = Color.White, Font = AppTheme.Font(9.5f, true),
+            Padding = new Padding(7, 8, 0, 0), Margin = new Padding(0)
+        };
+        bottomLayout.Controls.Add(userName, 0, 1);
+        var userRole = new Label
+        {
+            Text = RoleLabel(_user.Szerepkor), AutoSize = false, Dock = DockStyle.Fill,
+            ForeColor = AppTheme.SidebarMuted, Font = AppTheme.Font(8.5f),
+            Padding = new Padding(7, 2, 0, 0), Margin = new Padding(0)
+        };
+        bottomLayout.Controls.Add(userRole, 0, 2);
+
+        var changePassword = new Button
+        {
+            Text = "Jelszó módosítása", Dock = DockStyle.Fill, Height = 34,
+            FlatStyle = FlatStyle.Flat, BackColor = Color.Transparent, ForeColor = AppTheme.SidebarMuted,
+            Font = AppTheme.Font(8.5f), TextAlign = ContentAlignment.MiddleLeft,
+            Cursor = Cursors.Hand, Margin = new Padding(0)
+        };
+        changePassword.FlatAppearance.BorderSize = 0;
+        changePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(43, 58, 81);
+        changePassword.Click += async (_, _) => await ChangePasswordAsync();
+        bottomLayout.Controls.Add(changePassword, 0, 3);
+
+        var logout = new Button
+        {
+            Text = "↪  Kijelentkezés", Dock = DockStyle.Fill, Height = 34,
+            FlatStyle = FlatStyle.Flat, BackColor = Color.Transparent, ForeColor = AppTheme.SidebarMuted,
+            Font = AppTheme.Font(9), TextAlign = ContentAlignment.MiddleLeft,
+            Cursor = Cursors.Hand, Margin = new Padding(0)
+        };
         logout.FlatAppearance.BorderSize = 0;
         logout.FlatAppearance.MouseOverBackColor = Color.FromArgb(43, 58, 81);
         logout.Click += async (_, _) => await LogoutAsync();
-        bottom.Controls.Add(logout);
+        bottomLayout.Controls.Add(logout, 0, 4);
 
         var right = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Background };
         Controls.Add(right);
@@ -208,7 +252,7 @@ public sealed class MainForm : Form
         var repair = repairs.Count(x => x.Allapot == "JavitasAlatt");
         var returned = repairs.Count(x => x.Allapot == "Visszaadva");
 
-        var cards = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 136, WrapContents = false, AutoScroll = true, BackColor = AppTheme.Background, Padding = new Padding(0, 0, 0, 8) };
+        var cards = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 142, WrapContents = false, AutoScroll = true, BackColor = AppTheme.Background, Padding = new Padding(0, 0, 0, 8), Margin = new Padding(0) };
         body.Controls.Add(cards);
         cards.Controls.Add(CreateStatCard("Összes javítás", total.ToString(), "Nyilvántartott munkalap", AppTheme.Accent));
         cards.Controls.Add(CreateStatCard("Folyamatban", open.ToString(), $"Ebből javítás alatt: {repair}", AppTheme.Orange));
@@ -591,18 +635,56 @@ public sealed class MainForm : Form
     private Panel CreateStatCard(string title, string value, string detail, Color accent)
     {
         var card = AppTheme.Card();
-        card.Size = new Size(190, 116);
-        var stripe = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = accent };
-        card.Controls.Add(stripe);
+        card.Size = new Size(196, 122);
+        card.Padding = new Padding(0);
+        card.Margin = new Padding(0, 0, 12, 10);
+
+        // A kétoszlopos elrendezés garantálja, hogy a színes jelölősáv
+        // és a szövegek soha ne kerüljenek egymás fölé.
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            Margin = new Padding(0), Padding = new Padding(0), BackColor = Color.White
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 5));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        card.Controls.Add(layout);
+
+        var stripe = new Panel { Dock = DockStyle.Fill, BackColor = accent, Margin = new Padding(0) };
+        layout.Controls.Add(stripe, 0, 0);
+
+        var content = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3,
+            Padding = new Padding(12, 7, 7, 6), Margin = new Padding(0), BackColor = Color.White
+        };
+        content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        content.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        content.RowStyles.Add(new RowStyle(SizeType.Absolute, 39));
+        content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.Controls.Add(content, 1, 0);
+
         var titleLabel = AppTheme.Label(title, 9, true, AppTheme.Muted);
-        titleLabel.Location = new Point(19, 16);
-        card.Controls.Add(titleLabel);
-        var valueLabel = AppTheme.Label(value, 24, true);
-        valueLabel.Location = new Point(19, 38);
-        card.Controls.Add(valueLabel);
-        var detailLabel = AppTheme.Label(detail, 8.5f, false, AppTheme.Muted);
-        detailLabel.Location = new Point(20, 79);
-        card.Controls.Add(detailLabel);
+        titleLabel.Dock = DockStyle.Fill;
+        titleLabel.TextAlign = ContentAlignment.MiddleLeft;
+        titleLabel.Margin = new Padding(0);
+        content.Controls.Add(titleLabel, 0, 0);
+
+        var valueLabel = AppTheme.Label(value, 23, true, AppTheme.Ink);
+        valueLabel.Dock = DockStyle.Fill;
+        valueLabel.TextAlign = ContentAlignment.MiddleLeft;
+        valueLabel.Margin = new Padding(0);
+        content.Controls.Add(valueLabel, 0, 1);
+
+        var detailLabel = AppTheme.Label(detail, 8.2f, false, AppTheme.Muted);
+        detailLabel.Dock = DockStyle.Fill;
+        detailLabel.AutoSize = false;
+        detailLabel.AutoEllipsis = true;
+        detailLabel.TextAlign = ContentAlignment.MiddleLeft;
+        detailLabel.Margin = new Padding(0);
+        content.Controls.Add(detailLabel, 0, 2);
+
         return card;
     }
 
@@ -675,6 +757,25 @@ public sealed class MainForm : Form
     {
         try { await action(); }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        using var dialog = new PasswordChangeDialog();
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        try
+        {
+            await _api.ChangePasswordAsync(dialog.Request.RegiJelszo, dialog.Request.UjJelszo);
+            MessageBox.Show(this,
+                "A jelszó sikeresen megváltozott. A jelenlegi munkamenet aktív marad.",
+                "Jelszó módosítva", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Nem sikerült módosítani a jelszót",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private async Task LogoutAsync()

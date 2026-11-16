@@ -1,4 +1,4 @@
-﻿using SzervizApp.DataContext.Entities;
+using SzervizApp.DataContext.Entities;
 
 namespace SzervizApp.Api.Contracts;
 
@@ -18,5 +18,6 @@ public sealed record JavitasDto(
     bool Garancialis,
     string? Megjegyzes,
     bool KoltsegekVeglegesitve,
-    int Verzio
+    int Verzio,
+    string? FelelosNev = null
 );

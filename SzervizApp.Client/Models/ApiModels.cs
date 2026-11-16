@@ -1,6 +1,7 @@
 namespace SzervizApp.Client.Models;
 
 public sealed record LoginRequest(string Felhasznalonev, string Jelszo);
+public sealed record JelszoModositasRequest(string RegiJelszo, string UjJelszo);
 
 public sealed class LoginResponseDto
 {
@@ -32,6 +33,7 @@ public sealed class JavitasDto
     public string? Megjegyzes { get; set; }
     public bool KoltsegekVeglegesitve { get; set; }
     public int Verzio { get; set; }
+    public string? FelelosNev { get; set; }
 }
 
 public sealed class FeladatDto

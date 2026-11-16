@@ -28,7 +28,7 @@ public sealed class JavitasService(AppDbContext db, IHttpContextAccessor accesso
         JavitasAllapot? allapot = null, int? felelosId = null, bool csakNyitott = false)
     {
         if (allapot.HasValue && !Enum.IsDefined(allapot.Value)) throw new SzervizKivetel(400, "Hibás kérés.");
-        var q = LathatoJavitasok.AsNoTracking();
+        var q = LathatoJavitasok.Include(j => j.FelelosFelhasznalo).AsNoTracking();
         if (allapot.HasValue) q = q.Where(j => j.Allapot == allapot);
         if (felelosId.HasValue) q = q.Where(j => j.FelelosFelhasznaloId == felelosId);
         if (csakNyitott) q = q.Where(j => j.Allapot != JavitasAllapot.Lezart && j.Allapot != JavitasAllapot.Visszaadva);
@@ -54,7 +54,8 @@ public sealed class JavitasService(AppDbContext db, IHttpContextAccessor accesso
 
     public async Task<JavitasDto> GetById(int id, CancellationToken ct)
     {
-        var j = await LathatoJavitasok.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+        var j = await LathatoJavitasok.Include(x => x.FelelosFelhasznalo)
+            .AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
         return j is null ? throw new SzervizKivetel(404, "Az adat nem található.") : ToDto(j);
     }
 

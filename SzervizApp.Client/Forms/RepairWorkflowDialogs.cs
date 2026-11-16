@@ -500,7 +500,10 @@ internal sealed class RepairDetailsDialog : Form
             _costs = await _api.GetKoltsegOsszesitesAsync(_repair.Id);
 
             _status.Text = AppTheme.StatusLabel(_repair.Allapot);
-            _assigned.Text = $"Felelős: {(_repair.FelelosFelhasznaloId.HasValue ? $"munkatárs #{_repair.FelelosFelhasznaloId}" : "nincs kijelölve")}     Tervezett befejezés: {_repair.TervezettBefejezes?.ToString("yyyy. MM. dd.") ?? "–"}";
+            var assignee = string.IsNullOrWhiteSpace(_repair.FelelosNev)
+                ? (_repair.FelelosFelhasznaloId.HasValue ? "Név nem érhető el" : "nincs kijelölve")
+                : _repair.FelelosNev;
+            _assigned.Text = $"Felelős: {assignee}     Tervezett befejezés: {_repair.TervezettBefejezes?.ToString("yyyy. MM. dd.") ?? "–"}";
             _inspectionSummary.Text = _inspection is null
                 ? "Még nincs bevizsgálási eredmény rögzítve."
                 : $"{_inspection.Eredmeny}\nBecsült költség: {_inspection.BecsultKoltseg?.ToString("N0") ?? "nincs megadva"} Ft\nRögzítve: {_inspection.Datum:yyyy. MM. dd. HH:mm}";

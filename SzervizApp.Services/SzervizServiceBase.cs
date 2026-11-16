@@ -45,5 +45,6 @@ public abstract class SzervizServiceBase(AppDbContext db, IHttpContextAccessor a
     protected static JavitasDto ToDto(Javitas j) => new(j.Id, j.UgyfelId, j.EszkozId,
         j.BejelentettHiba, j.AtvetelDatuma, j.Allapot, j.LezarasDatuma, j.Eredmeny,
         j.LezarasIndoklasa, j.FelvevoFelhasznaloId, j.FelelosFelhasznaloId,
-        j.TervezettBefejezes, j.Garancialis, j.Megjegyzes, j.KoltsegekVeglegesitve, j.Verzio);
+        j.TervezettBefejezes, j.Garancialis, j.Megjegyzes, j.KoltsegekVeglegesitve, j.Verzio,
+        j.FelelosFelhasznalo?.Nev);
 }

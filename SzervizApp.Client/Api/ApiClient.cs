@@ -32,6 +32,14 @@ public sealed class ApiClient : IDisposable
         return response;
     }
 
+    public async Task ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        // A végpont a régi belépési verziót visszavonja, és új JWT-t ad vissza.
+        var response = await SendAsync<LoginResponseDto>(HttpMethod.Put, "api/auth/jelszo",
+            new JelszoModositasRequest(currentPassword, newPassword), includeToken: true, ct);
+        _token = response.Token;
+    }
+
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         try { await SendNoContentAsync(HttpMethod.Post, "api/auth/kijelentkezes", null, ct); }
